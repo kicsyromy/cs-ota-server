@@ -3,7 +3,7 @@ using System.Text;
 
 namespace ScOtaServer;
 
-class Team
+internal class Team
 {
     const string MODEL_PATH = "/var/sc-ota/models";
     
@@ -86,6 +86,11 @@ class Team
             await destination.WriteAsync(buffer, 0, bytesToWrite);
             
             totalBytesRead += bytesToWrite;
+        }
+        
+        if (await source.ReadAsync(buffer, 0, 1) > 0 && totalBytesRead >= maxBytes)
+        {
+            throw new HttpListenerException(413, "File exceeds maximum size of 1 GiB");
         }
     }
 
