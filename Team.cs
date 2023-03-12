@@ -1,12 +1,11 @@
 using System.Net;
-using System.Text;
 
 namespace ScOtaServer;
 
 internal class Team
 {
     const string MODEL_PATH = "/var/sc-ota/models";
-    
+
     string _username;
     string _password;
 
@@ -81,13 +80,13 @@ internal class Team
         while ((bytesRead = await source.ReadAsync(buffer, 0, buffer.Length)) > 0 && totalBytesRead < maxBytes)
         {
             var bytesLeftToWrite = maxBytes - totalBytesRead;
-            int bytesToWrite = (int)Math.Min(bytesRead, bytesLeftToWrite < 0 ? 0: bytesLeftToWrite);
-            
+            int bytesToWrite = (int)Math.Min(bytesRead, bytesLeftToWrite < 0 ? 0 : bytesLeftToWrite);
+
             await destination.WriteAsync(buffer, 0, bytesToWrite);
-            
+
             totalBytesRead += bytesToWrite;
         }
-        
+
         if (await source.ReadAsync(buffer, 0, 1) > 0 && totalBytesRead >= maxBytes)
         {
             throw new HttpListenerException(413, "File exceeds maximum size of 1 GiB");

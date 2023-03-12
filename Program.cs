@@ -10,14 +10,14 @@ class Program
     static readonly Team Team2 = new Team("team2", "BvZGcmXW39RnL5MtpzvM");
     static readonly Team Team3 = new Team("team3", "fTfknjjeJqRD5myKTnK9");
     static readonly Team Team4 = new Team("team4", "MUnFEnRqzH4fBWRT8YXJ");
-    
+
     static void ProcessRequest(HttpListenerContext context, TokenBucket tokenBucket)
     {
         new Task(async () =>
         {
             HttpListenerRequest request = context.Request;
             HttpListenerResponse response = context.Response;
-            
+
             if (!tokenBucket.TryConsumeToken(1))
             {
                 context.Response.StatusCode = 429;
@@ -25,7 +25,7 @@ class Program
                 await context.Response.OutputStream.WriteAsync("{ \"error\": \"Rate limit exceeded\" }"u8.ToArray()).ConfigureAwait(false);
                 await context.Response.OutputStream.FlushAsync().ConfigureAwait(false);
                 context.Response.Close();
-                
+
                 return;
             }
 
@@ -104,7 +104,6 @@ class Program
 
     static void Main()
     {
-        
         HttpListener listener = new HttpListener();
         TokenBucket tokenBucket = new TokenBucket(100, 1000);
 
