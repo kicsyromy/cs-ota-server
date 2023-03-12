@@ -1,12 +1,12 @@
-FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:7.0-alpine AS build
 WORKDIR /source
 
-COPY **/*.csproj .
-COPY **/*.cs .
+COPY *.csproj .
+COPY *.cs .
 RUN dotnet restore
 RUN dotnet publish -c Release -o /app --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:6.0-alpine
+FROM mcr.microsoft.com/dotnet/aspnet:7.0-alpine
 WORKDIR /app
 COPY --from=build /app ./
 ENTRYPOINT ["dotnet", "sc-ota-server.dll"]
