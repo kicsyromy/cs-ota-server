@@ -29,28 +29,47 @@ internal class Team
         // Get the file name from the query string
         var query = request.Url?.Query.Trim('?').Split('&', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         var fileName = query?.FirstOrDefault(q => q.StartsWith("fileName=", StringComparison.InvariantCultureIgnoreCase))?.Substring(9);
-        if (string.IsNullOrWhiteSpace(fileName))
+        var listCmd = query?.FirstOrDefault(q => q.StartsWith("list", StringComparison.InvariantCultureIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(fileName))
         {
-            throw new HttpListenerException(400, "Missing or empty 'fileName' parameter");
-        }
+            if (request.HttpMethod == "PUT")
+            {
+                await UploadModel(request.InputStream, fileName).ConfigureAwait(false);
 
-        if (request.HttpMethod == "PUT")
+                response.ContentType = "application/json";
+                response.OutputStream.Write("{ \"success\": true }"u8);
+            }
+            else if (request.HttpMethod == "GET")
+            {
+                response.ContentType = "application/octet-stream";
+
+                await DownloadModel(response.OutputStream, fileName).ConfigureAwait(false);
+                await response.OutputStream.FlushAsync().ConfigureAwait(false);
+            }
+            else
+            {
+                throw new HttpListenerException(405, "Only 'PUT' and 'GET' requests are allowed");
+            }
+
+        }
+        else if (!string.IsNullOrWhiteSpace(listCmd))
         {
-            await UploadModel(request.InputStream, fileName).ConfigureAwait(false);
+            if (request.HttpMethod != "GET")
+            {
+                throw new HttpListenerException(400, "Only GET requests are allowed when 'list'-ing models.");
+            }
 
             response.ContentType = "application/json";
-            response.OutputStream.Write("{ \"success\": true }"u8);
-        }
-        else if (request.HttpMethod == "GET")
-        {
-            response.ContentType = "application/octet-stream";
 
-            await DownloadModel(response.OutputStream, fileName).ConfigureAwait(false);
+            var models = Directory.GetFiles(Path.Combine(MODEL_PATH, _username)).Select(Path.GetFileName).ToArray();
+            await response.OutputStream.WriteAsync(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(models)).ConfigureAwait(false);
             await response.OutputStream.FlushAsync().ConfigureAwait(false);
+
+
         }
         else
         {
-            throw new HttpListenerException(405, "Only 'PUT' and 'GET' requests are allowed");
+            throw new HttpListenerException(400, "Invalid or empty parameter list. Only 'fileName' or 'list' are allowed.");
         }
 
         response.Close();
@@ -96,9 +115,9 @@ internal class Team
     async Task UploadModel(Stream requestStream, string fileName)
     {
         // Create the directory if it doesn't already exist
-        Directory.CreateDirectory(MODEL_PATH);
+        Directory.CreateDirectory(Path.Combine(MODEL_PATH, _username));
 
-        await using var fileStream = File.Create(Path.Combine(MODEL_PATH, fileName));
+        await using var fileStream = File.Create(Path.Combine(MODEL_PATH, _username, fileName));
 
         await CopyStreamLimited(requestStream, fileStream, 1024 * 1024 * 1024).ConfigureAwait(false);
         await fileStream.FlushAsync().ConfigureAwait(false);
@@ -108,7 +127,7 @@ internal class Team
     {
         try
         {
-            await using var fileStream = File.OpenRead(Path.Combine(MODEL_PATH, fileName));
+            await using var fileStream = File.OpenRead(Path.Combine(MODEL_PATH, _username, fileName));
             await fileStream.CopyToAsync(responseStream).ConfigureAwait(false);
         }
         catch (FileNotFoundException)
