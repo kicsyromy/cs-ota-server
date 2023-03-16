@@ -41,22 +41,22 @@ class Program
             {
                 var path = request.Url?.AbsolutePath.Trim('/');
                 if (!string.IsNullOrWhiteSpace(path) &&
-                    string.Compare(path, "team1", CultureInfo.InvariantCulture, CompareOptions.IgnoreCase) == 0)
+                    string.Compare(path, "team1", StringComparison.InvariantCultureIgnoreCase) == 0)
                 {
                     await Team1.HandleRequest(context);
                 }
                 else if (!string.IsNullOrWhiteSpace(path) &&
-                         string.Compare(path, "team2", CultureInfo.InvariantCulture, CompareOptions.IgnoreCase) == 0)
+                         string.Compare(path, "team2", StringComparison.InvariantCultureIgnoreCase) == 0)
                 {
                     await Team2.HandleRequest(context);
                 }
                 else if (!string.IsNullOrWhiteSpace(path) &&
-                         string.Compare(path, "team3", CultureInfo.InvariantCulture, CompareOptions.IgnoreCase) == 0)
+                         string.Compare(path, "team3", StringComparison.InvariantCultureIgnoreCase) == 0)
                 {
                     await Team3.HandleRequest(context);
                 }
                 else if (!string.IsNullOrWhiteSpace(path) &&
-                         string.Compare(path, "team4", CultureInfo.InvariantCulture, CompareOptions.IgnoreCase) == 0)
+                         string.Compare(path, "team4", StringComparison.InvariantCultureIgnoreCase) == 0)
                 {
                     await Team4.HandleRequest(context);
                 }
@@ -67,9 +67,9 @@ class Program
                     response.ContentType = "application/json";
                     response.ContentEncoding = Encoding.UTF8;
 
-                    using var writer = new StreamWriter(response.OutputStream);
-                    writer.WriteLine("{ \"error\": \"Invalid team name\" }");
-                    writer.Flush();
+                    await using var writer = new StreamWriter(response.OutputStream);
+                    await writer.WriteLineAsync("{ \"error\": \"Invalid team name\" }").ConfigureAwait(false);
+                    await writer.FlushAsync().ConfigureAwait(false);
 
                     response.Close();
                 }
